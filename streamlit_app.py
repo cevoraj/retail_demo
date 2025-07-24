@@ -1,5 +1,6 @@
 import streamlit as st
 import numpy as np
+np.random.seed(7)
 from openai import OpenAI
 import matplotlib.pyplot as plt
 import folium
