@@ -2,9 +2,8 @@ import streamlit as st
 import numpy as np
 from openai import OpenAI
 import matplotlib.pyplot as plt
-import requests
-from io import BytesIO
-from PIL import Image
+import folium
+from streamlit_folium import st_folium
 from your_description_db import PRODUCT_DESCRIPTIONS  # from our earlier mapping
 from cleaning_products_db import SKUS
 import pandas as pd
@@ -267,8 +266,7 @@ def ask(txt):
 tab1, tab2, tab3 = st.tabs(["Locations", "Products", "Uplift Opportunities"])
 
 with tab1:
-    import folium
-    from streamlit_folium import st_folium
+
 
     st.title("Select store")
 

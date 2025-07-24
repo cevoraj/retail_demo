@@ -3,3 +3,5 @@ numpy
 openai
 matplotlib
 pandas
+folium
+streamlit-folium
