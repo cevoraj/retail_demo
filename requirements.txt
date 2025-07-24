@@ -1,1 +1,8 @@
 streamlit
+numpy
+openai
+matplotlib
+requests
+io
+PIL
+pandas
