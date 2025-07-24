@@ -15,9 +15,8 @@ st.session_state["openai"] = OpenAI(api_key=api_key)
 
 def showOpportunities():
     if "location" not in st.session_state:
-        location = "Wembley"
-        #st.error("Please select location first.")
-        #return
+        st.error("Please select location first.")
+        return
     else:
         location = st.session_state["location"]
 
@@ -44,7 +43,7 @@ def showOpportunities():
 
     # --- Potential Profit Uplift Calculation (£) ---
     # Assume random % uplift, then convert to £
-    uplift = np.random.pareto(0.2, size=len(df))
+    uplift = np.abs(np.random.pareto(0.3, size=len(df))* df["Suggested Price Change (£)"])
     df["Potential Profit Uplift (£)"] = uplift
 
     # Drop columns not needed in final display
@@ -89,6 +88,7 @@ def showOpportunities():
     
     st.title(f"{location}: Uplift opportunities in General CLeaning Products")
     df = df.sort_values(by="Potential Profit Uplift (£)", ascending=False).reset_index(drop=True)
+    df.set_index("SKU", inplace=True)
     st.dataframe(style_table(df), use_container_width=True)
 
 
@@ -118,29 +118,32 @@ def showSelector():
         location = st.session_state["location"]
           
 
-    st.title(f"{location}: Hierarchical Viewer")
+    st.title(f"{location}: SKU Viewer")
 
     # Main categories and subcategories
-    categories = ["Category","GM", "FMCG", "Fashion"]
+    #categories = ["Category","GM", "FMCG", "Fashion"]
+    categories = ["FMCG"]
     subcategories = {
-        "GM": ["Electronics", "Home Appliances", "Tools"],
-        "FMCG": ["Beverages", "Snacks", "Personal Care", "Cleaning"],
-        "Fashion": ["Men's Clothing", "Women's Clothing", "Accessories", "Footwear"],
-        "Category":["Subcategory"]
+        #"GM": ["Electronics", "Home Appliances", "Tools"],
+        #"FMCG": ["Beverages", "Snacks", "Personal Care", "Cleaning"],
+        "FMCG": ["Cleaning"],
+        #"Fashion": ["Men's Clothing", "Women's Clothing", "Accessories", "Footwear"],
+        #"Category":["Subcategory"]
     }
     products = {
-        "Electronics": ["Smartphone", "Laptop", "Headphones"],
-        "Home Appliances": ["Blender", "Vacuum Cleaner"],
-        "Tools": ["Drill", "Hammer"],
-        "Beverages": ["Cola", "Orange Juice"],
-        "Snacks": ["Chips", "Chocolate Bar"],
-        "Personal Care": ["Shampoo", "Toothpaste"],
-        "Cleaning": ["Dish Soap", "Laundry Detergent", "General cleaning"],
-        "Men's Clothing": ["T-Shirt", "Jeans"],
-        "Women's Clothing": ["Dress", "Blouse"],
-        "Accessories": ["Handbag", "Watch"],
-        "Footwear": ["Sneakers", "Sandals"],
-        "Subcategory": ["Product"]
+        #"Electronics": ["Smartphone", "Laptop", "Headphones"],
+        #"Home Appliances": ["Blender", "Vacuum Cleaner"],
+        #"Tools": ["Drill", "Hammer"],
+        #"Beverages": ["Cola", "Orange Juice"],
+        #"Snacks": ["Chips", "Chocolate Bar"],
+        #"Personal Care": ["Shampoo", "Toothpaste"],
+        #"Cleaning": ["Dish Soap", "Laundry Detergent", "General cleaning"],
+        "Cleaning": ["Detergents"],
+        #"Men's Clothing": ["T-Shirt", "Jeans"],
+        #"Women's Clothing": ["Dress", "Blouse"],
+        #"Accessories": ["Handbag", "Watch"],
+        #"Footwear": ["Sneakers", "Sandals"],
+        #"Subcategory": ["Product"]
     }
 
     
@@ -154,7 +157,7 @@ def showSelector():
         if SUB:
             PROD = st.selectbox("Select Product", products[SUB])
             if PROD:
-                if PROD == "General cleaning":
+                if PROD == "Detergents":
                     SKU = st.selectbox("Select SKU", list(SKUS[PROD].keys()))
                     if SKU and SKU!="SKU":
                         st.write(f"**Selected:** {CATEGORY} → {SUB} → {PROD} → {SKU}")
@@ -192,7 +195,7 @@ def display_product_details(p,location):
 
     # --- Profit Calculation ---
     # NOTE THIS IS ECONOMICALLY INCORRECT, ONLY DESIGNED TO LOOK NICE
-    profit = bell_curve(x = price_range, mu = np.random.normal(P0,P0/20), sigma = np.random.normal(P0/5,P0/10), amplitude = exponential_sample(1000,1))
+    profit = bell_curve(x = price_range, mu = np.random.normal(P0,P0/10), sigma = np.random.normal(P0/4,P0/10), amplitude = exponential_sample(1000,1))
 
     # Optimal price
     idx = np.argmax(profit)
@@ -210,17 +213,17 @@ def display_product_details(p,location):
     ax2 = ax1.twinx()
     ax2.set_ylabel("Total Profit (£/wk/location)", color="tab:green")
     ax2.plot(price_range, profit, color="tab:green", linestyle="--")
-    ax2.set_ylim(profit[0], optimal_profit*2 - profit[0])
+    ax2.set_ylim(0, optimal_profit*2 - profit[0])
     ax2.tick_params(axis="y", labelcolor="tab:green")
 
     # Markers for price levels
-    ax2.scatter(optimal_price, optimal_profit, color="red", label=f"Max Profit (£{optimal_price:.2f})")
+    ax2.scatter(optimal_price, optimal_profit, color="red", label=f"Most profitable: £{optimal_price:.2f}/unit")
     idx = np.argmin(np.abs(price_range - P0))
     current_profit = profit[idx]
-    ax2.scatter(P0, current_profit, color="orange", label=f"Current (£{P0:.2f})")
+    ax2.scatter(P0, current_profit, color="orange", label=f"Current: £{P0:.2f}/unit")
     idx = np.argmin(np.abs(price_range - competitor_price))
     comp_profit = profit[idx]
-    ax2.scatter(competitor_price, comp_profit, color="purple", label=f"Competitor (£{competitor_price:.2f})")
+    ax2.scatter(competitor_price, comp_profit, color="purple", label=f"Competitor: £{competitor_price:.2f}/unit")
 
     # Add legend
     ax2.legend(loc="best")
@@ -229,24 +232,27 @@ def display_product_details(p,location):
     fig.tight_layout()
     st.pyplot(fig)
 
-    if optimal_price > P0:
-        #underpriced
-        if competitor_price > P0:
-            #underpriced and copmaratively cheaper
-            st.success("Increase price.")
-        else:
-            #underpriced but copmaratively expensive
-            st.warning("Potential for price increase. Excercise caution.")
+    if np.abs(optimal_profit-current_profit) < 20:
+        st.warning("The product seems to be priced close to opimal amount.")
     else:
-        if competitor_price > P0:
-        #overpriced but comparatively cheap
-            st.warning("Decrease price. Exercise caution")
+        if optimal_price > P0:
+            #underpriced
+            if competitor_price > P0:
+                #underpriced and copmaratively cheaper
+                st.error("Increase price.")
+            else:
+                #underpriced but copmaratively expensive
+                st.warning("Potential for price increase. Excercise caution.")
         else:
-            #overpriced and comparatively expensive
-            st.warning("Decrease price.")
+            if competitor_price > P0:
+            #overpriced but comparatively cheap
+                st.warning("Consider moving the stock to a different store.")
+            else:
+                #overpriced and comparatively expensive
+                st.warning("Decrease price.")
 
-    st.write(ask(f"The product in question is {p}. It is sold in a shop in {location}. The optimum price for the product is {optimal_price} leading to {optimal_profit} of profit per week in this location. The profit at the current price is {current_profit}. First provide a single sentence advice regarding pricing of the product. Second provide one paragraph (made-up) explanation for your advice. Quote demographics of the location {location}. (Made-up) past performance of the product. Quote pricing at a competitor. Consider if the product might be a KVI and if that might affect pricing."))
-    
+        st.write(ask(f"The product in question is {p}. It is sold in a shop in {location}. The optimum price for the product is {optimal_price} leading to {optimal_profit} of profit per week in this location. The profit at the current price is {current_profit}. First provide a single sentence advice regarding pricing of the product. Only in cases where the product is priced lower than competitor but the optimum price is higher you should suggest to move the stock to a different store instead of changing the price. Second provide 4-6 bullet-point (made-up) explanation for your advice. Quote demographics of the location {location}. (Made-up) past performance of the product. Quote pricing at a competitor. Consider if the product might be a KVI and if that might affect pricing. If the advice is to move the stock to a different store, name the store to move the stock to including a brief explanation why that store is more suitable. (if it indeed is recommendable to move the stock suggest one of the following stores: Scotland Yard, Lewisham, Brixton, Hammersmith, Paddington Green, Charing Cross, Islington, Highbury Corner, Holborn, Croydon, Edmonton, Stoke Newington, Sutton, Twickenham, Stratford, Wembley, Walworth, Dagenham, Bromley, Acton)."))
+        
 
 def ask(txt):
     message = st.session_state["openai"].chat.completions.create(
@@ -257,14 +263,14 @@ def ask(txt):
     )
     return message.choices[0].message.content
 
-showOpportunities()
-tab1, tab2, tab3 = st.tabs(["Locations", "Existing Product", "New Product"])
+
+tab1, tab2, tab3 = st.tabs(["Locations", "Products", "Uplift Opportunities"])
 
 with tab1:
     import folium
     from streamlit_folium import st_folium
 
-    st.title("Select location")
+    st.title("Select store")
 
     # Create a folium map centered at a location
     m = folium.Map(location=[51.5074, -0.1278], zoom_start=10)  # London
@@ -321,13 +327,8 @@ with tab2:
                 
 
 
-with tab3:
-    
-    if "location" not in st.session_state:
+with tab3:  
 
-        st.error("Please select location first.")
-    else:
-        location = st.session_state["location"]
-        st.title(location)    
+    showOpportunities()
 
      

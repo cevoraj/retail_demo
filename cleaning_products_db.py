@@ -1,6 +1,6 @@
 SKUS = {
     "Product": {},
-    "General cleaning":{
+    "Detergents":{
     "SKU":{},
     "P&G-CLN-001": {
         "brand": "Procter & Gamble",
