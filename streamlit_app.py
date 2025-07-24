@@ -86,6 +86,45 @@ def showOpportunities():
 
     # --- Show Table in Streamlit ---
     
+
+    def recommendation(row):
+        # 1) Optimal price if uplift < 20
+        if row["Potential Profit Uplift (£)"] < 20:
+            return "✅ Optimal price"  # (green letters in Streamlit can be added with markdown)
+        
+        # 2) Redistribution condition
+        if (
+            row["Current Price (£)"] > row["Competitor Price (£)"] and
+            (row["Current Price (£)"] + row["Suggested Price Change (£)"]) > row["Competitor Price (£)"]
+        ):
+            return "Redistribution"
+        
+        # 3 & 4) Increase or Decrease depending on directionality
+        if row["Suggested Price Change (£)"] > 0:
+            return "Increase price"
+        elif row["Suggested Price Change (£)"] < 0:
+            return "Decrease price"
+        else:
+            return "No change"
+        
+    df["Recommendation"] = df.apply(recommendation, axis=1)
+
+    def recommendation_with_arrows(row):
+
+        # 3 & 4) Increase or Decrease depending on directionality
+        if row["Recommendation"] == "Increase price":
+            return "🟢 Increase price"
+        elif row["Recommendation"] == "Decrease price":
+            return "🔴 Decrease price"
+        elif row["Recommendation"] == "Redistribution":
+            return "🔄 Redistribution"
+        elif row["Recommendation"] == "✅ Optimal price":
+            return "✅ Optimal price"
+        
+
+
+    df["Recommendation"] = df.apply(recommendation_with_arrows, axis=1)
+
     st.title(f"{location}: Uplift opportunities in General Cleaning Products")
     df = df.sort_values(by="Potential Profit Uplift (£)", ascending=False).reset_index(drop=True)
     df.set_index("SKU", inplace=True)
@@ -314,8 +353,6 @@ def ask(txt):
     )
     return message.choices[0].message.content
 
-st.session_state["location"] = None
-showOpportunities()
 tab1, tab2, tab3 = st.tabs(["Locations", "Products", "Uplift Opportunities"])
 
 with tab1:
