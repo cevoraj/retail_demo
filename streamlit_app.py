@@ -8,6 +8,7 @@ from your_description_db import PRODUCT_DESCRIPTIONS  # from our earlier mapping
 from cleaning_products_db import SKUS
 import pandas as pd
 
+st.set_page_config(layout="wide")
 
 api_key = st.secrets["OPENAI"]["OPENAI_API_KEY"]
 st.session_state["openai"] = OpenAI(api_key=api_key)
@@ -38,11 +39,11 @@ def showOpportunities():
 
     # --- Generate Random Suggested Adjustments ---
     np.random.seed()  # optional: comment out for full randomness
-    df["Suggested Price Change (£)"] = np.round(np.random.normal(loc=0.0, scale=0.25, size=len(df)), 2)
+    df["Suggested Price Change (£)"] = np.round(np.maximum(np.minimum(np.random.standard_t(2, size=len(df)),df["Current Price (£)"]*.3),df["Current Price (£)"]*-0.3), 2)
 
     # --- Potential Profit Uplift Calculation (£) ---
     # Assume random % uplift, then convert to £
-    uplift = np.abs(np.random.pareto(0.3, size=len(df))* df["Suggested Price Change (£)"])
+    uplift = 100*np.abs(np.random.pareto(1, size=len(df))* df["Suggested Price Change (£)"])
     df["Potential Profit Uplift (£)"] = uplift
 
     # Drop columns not needed in final display
@@ -85,10 +86,10 @@ def showOpportunities():
 
     # --- Show Table in Streamlit ---
     
-    st.title(f"{location}: Uplift opportunities in General CLeaning Products")
+    st.title(f"{location}: Uplift opportunities in General Cleaning Products")
     df = df.sort_values(by="Potential Profit Uplift (£)", ascending=False).reset_index(drop=True)
     df.set_index("SKU", inplace=True)
-    st.dataframe(style_table(df), use_container_width=True)
+    st.dataframe(style_table(df))
 
 
 def bell_curve(x, mu=0, sigma=1, amplitude=1):
@@ -250,24 +251,9 @@ def display_product_details(p,location):
                 #overpriced and comparatively expensive
                 st.warning("Decrease price.")
 
-        st.write(ask(f"The product in question is {p}. It is sold in a shop in {location}. The optimum price for the product is {optimal_price} leading to {optimal_profit} of profit per week in this location. The profit at the current price is {current_profit}. First provide a single sentence advice regarding pricing of the product. Only in cases where the product is priced lower than competitor but the optimum price is higher you should suggest to move the stock to a different store instead of changing the price. Second provide 4-6 bullet-point (made-up) explanation for your advice. Quote demographics of the location {location}. (Made-up) past performance of the product. Quote pricing at a competitor. Consider if the product might be a KVI and if that might affect pricing. If the advice is to move the stock to a different store, name the store to move the stock to including a brief explanation why that store is more suitable. (if it indeed is recommendable to move the stock suggest one of the following stores: Scotland Yard, Lewisham, Brixton, Hammersmith, Paddington Green, Charing Cross, Islington, Highbury Corner, Holborn, Croydon, Edmonton, Stoke Newington, Sutton, Twickenham, Stratford, Wembley, Walworth, Dagenham, Bromley, Acton)."))
+        st.write(ask(f"The product in question is {p}. It is sold in a shop in {location}. The optimum price for the product is {optimal_price} leading to {optimal_profit} of profit per week in this location. The profit at the current price is {current_profit}. First provide a single sentence advice regarding pricing of the product. Only in cases where the product is priced lower than competitor and the the optimum price is even higher than the competitor you should suggest to move the stock to a different store instead of changing the price. Second provide 4-6 bullet-point (made-up) explanation for your advice. Quote demographics of the location {location}. (Made-up) past performance of the product. Quote pricing at a competitor. Consider if the product might be a KVI and if that might affect pricing. If the advice is to move the stock to a different store, name the store to move the stock to including a brief explanation why that store is more suitable. (if it indeed is recommendable to move the stock suggest one of the following stores: Scotland Yard, Lewisham, Brixton, Hammersmith, Paddington Green, Charing Cross, Islington, Highbury Corner, Holborn, Croydon, Edmonton, Stoke Newington, Sutton, Twickenham, Stratford, Wembley, Walworth, Dagenham, Bromley, Acton)."))
         
-
-def ask(txt):
-    message = st.session_state["openai"].chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "user", "content": txt},
-        ],
-    )
-    return message.choices[0].message.content
-
-
-tab1, tab2, tab3 = st.tabs(["Locations", "Products", "Uplift Opportunities"])
-
-with tab1:
-
-
+def storeSelector():
     st.title("Select store")
 
     # Create a folium map centered at a location
@@ -318,6 +304,24 @@ with tab1:
                 st.session_state["location"]=s_name
                 break
 
+
+def ask(txt):
+    message = st.session_state["openai"].chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "user", "content": txt},
+        ],
+    )
+    return message.choices[0].message.content
+
+st.session_state["location"] = None
+showOpportunities()
+tab1, tab2, tab3 = st.tabs(["Locations", "Products", "Uplift Opportunities"])
+
+with tab1:
+
+    storeSelector()
+    
 
 with tab2:
 

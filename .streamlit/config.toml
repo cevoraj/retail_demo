@@ -1,0 +1,9 @@
+[theme]
+base="light"
+
+[server]
+headless = true
+
+[ui]
+# This makes the main content container use the full browser width
+wideMode = true
